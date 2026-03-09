@@ -97,23 +97,6 @@ body {
 .dz-fmts  { font-size: .72rem; color: var(--text-3); margin-top: 10px; letter-spacing: .2px; }
 input[type=file] { display: none; }
 
-/* ── Selected file preview ── */
-.sel-file { display: flex; align-items: center; gap: 12px; padding: 14px 16px; margin-bottom: 14px; }
-.sel-file-icon {
-  width: 42px; height: 42px; border-radius: 11px;
-  background: var(--blue-light); display: flex; align-items: center;
-  justify-content: center; font-size: 1.1rem; flex-shrink: 0;
-}
-.sel-file-info { flex: 1; min-width: 0; }
-.sel-file-name { font-size: .9rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sel-file-size { font-size: .75rem; color: var(--text-2); margin-top: 2px; }
-.sel-file-remove {
-  width: 30px; height: 30px; border: none; background: none; border-radius: var(--r-sm);
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; color: var(--text-3); font-size: 1rem; flex-shrink: 0;
-  transition: background .15s, color .15s;
-}
-.sel-file-remove:hover { background: var(--red-light); color: var(--red); }
 
 /* ── Buttons ── */
 .btn {
@@ -377,15 +360,6 @@ input[type=file] { display: none; }
     </div>
     <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png">
 
-    <div id="selFile" class="card sel-file" style="display:none">
-      <div class="sel-file-icon">📎</div>
-      <div class="sel-file-info">
-        <div class="sel-file-name" id="selFileName">—</div>
-        <div class="sel-file-size" id="selFileSize">—</div>
-      </div>
-      <button class="sel-file-remove" id="removeFileBtn" title="Remove">✕</button>
-    </div>
-
     <div id="uploadConfirmedSection" style="display:none">
       <p class="confirmed-lbl">Added labs</p>
       <div class="card" id="uploadConfirmedList"></div>
@@ -446,9 +420,8 @@ input[type=file] { display: none; }
 </div><!-- /page -->
 
 <!-- Fixed bottom bars -->
-<div class="bottom-bar" id="bar-upload">
-  <button class="btn btn-secondary" id="generateResultsBtn" style="display:none">Generate Results</button>
-  <button class="btn btn-primary"   id="analyzeBtn" disabled>Analyze Lab</button>
+<div class="bottom-bar" id="bar-upload" style="display:none">
+  <button class="btn btn-primary" id="generateResultsBtn">Generate Results</button>
 </div>
 
 <div class="bottom-bar" id="bar-validation" style="display:none">
@@ -502,11 +475,6 @@ const MOCK_KEYS = Object.keys(MOCK);
 let mockIdx = 0;
 
 // ─────────────── Helpers ───────────────
-function fmtSize(b) {
-  if (b < 1024) return b + ' B';
-  if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
-  return (b / 1048576).toFixed(1) + ' MB';
-}
 function esc(s) { const d = document.createElement('div'); d.textContent = String(s); return d.innerHTML; }
 
 // ─────────────── Screen switching ───────────────
@@ -517,7 +485,7 @@ function showScreen(name) {
     document.getElementById(id).style.display = 'none');
 
   document.getElementById('s-' + name).classList.add('active');
-  if (name === 'upload')     document.getElementById('bar-upload').style.display = '';
+  if (name === 'upload')     updateUploadBar();
   if (name === 'validation') document.getElementById('bar-validation').style.display = '';
   if (name === 'results')    document.getElementById('bar-results').style.display = '';
   window.scrollTo(0, 0);
@@ -586,10 +554,8 @@ function startProcessing(phase) {
 }
 
 // ─────────────── Upload screen ───────────────
-const dropzone   = document.getElementById('dropzone');
-const fileInput  = document.getElementById('fileInput');
-const analyzeBtn = document.getElementById('analyzeBtn');
-const selFile    = document.getElementById('selFile');
+const dropzone  = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
 
 dropzone.addEventListener('click', () => fileInput.click());
 dropzone.addEventListener('dragover',  e => { e.preventDefault(); dropzone.classList.add('over'); });
@@ -607,21 +573,8 @@ function pickFile(f) {
   const key = MOCK_KEYS[mockIdx % MOCK_KEYS.length];
   mockIdx++;
   currentFile = { name: f.name, size: f.size, mockKey: key };
-  document.getElementById('selFileName').textContent = f.name;
-  document.getElementById('selFileSize').textContent = fmtSize(f.size);
-  selFile.style.display  = '';
-  dropzone.style.display = 'none';
-  updateUploadBar();
+  startProcessing('extract');
 }
-
-document.getElementById('removeFileBtn').addEventListener('click', () => {
-  currentFile = null;
-  selFile.style.display  = 'none';
-  dropzone.style.display = '';
-  updateUploadBar();
-});
-
-analyzeBtn.addEventListener('click', () => startProcessing('extract'));
 
 // ─────────────── Validation screen ───────────────
 function renderValidation() {
@@ -716,14 +669,11 @@ function renderUploadConfirmed() {
 }
 
 function updateUploadBar() {
-  document.getElementById('generateResultsBtn').style.display = confirmedSets.length > 0 ? '' : 'none';
-  analyzeBtn.disabled = !currentFile;
+  document.getElementById('bar-upload').style.display = confirmedSets.length > 0 ? '' : 'none';
 }
 
 function goToUploadForAnother() {
   currentFile = null;
-  selFile.style.display  = 'none';
-  dropzone.style.display = '';
   document.getElementById('uploadTitle').textContent = confirmedSets.length > 0 ? 'Add Another Lab' : 'Upload Lab Results';
   document.getElementById('uploadSub').textContent   = confirmedSets.length > 0
     ? 'Add another document to include more values in your results.'
