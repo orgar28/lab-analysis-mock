@@ -224,16 +224,50 @@ input[type=file] { display: none; }
 }
 .add-row-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
 
-/* ── Results ── */
-.results-cat { margin-bottom: 22px; }
-.results-cat-hd {
-  display: flex; align-items: center; gap: 7px;
-  margin-bottom: 10px; padding: 0 2px;
+/* ── Insight card ── */
+.insight-card {
+  background: linear-gradient(135deg, #EFF6FF 0%, #F0FDF4 100%);
+  border: 1px solid #BFDBFE; border-radius: var(--r);
+  padding: 16px; margin-bottom: 20px;
 }
-.cat-icon { font-size: 1rem; }
-.cat-name { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .55px; color: var(--text-2); }
+.insight-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 9px; }
+.insight-label { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--blue); }
+.insight-date  { font-size: .68rem; color: var(--text-3); }
+.insight-title { font-size: .95rem; font-weight: 700; color: var(--text); margin-bottom: 5px; }
+.insight-body  { font-size: .81rem; color: var(--text-2); line-height: 1.5; margin-bottom: 11px; }
+.insight-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.insight-chip  { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: var(--r-pill); font-size: .71rem; font-weight: 600; }
+.chip-red    { background: var(--red-light);    color: #B91C1C; }
+.chip-yellow { background: var(--yellow-light); color: #854D0E; }
+.chip-green  { background: var(--green-light);  color: #15803D; }
 
-.results-list { background: var(--surface); border-radius: var(--r); border: 1px solid var(--border); overflow: hidden; }
+/* ── Results ── */
+.results-cat {
+  background: var(--surface); border-radius: var(--r);
+  border: 1px solid var(--border); box-shadow: var(--shadow);
+  overflow: hidden; margin-bottom: 12px;
+}
+.cat-toggle {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 14px; cursor: pointer; user-select: none;
+  transition: background .15s;
+}
+.cat-toggle:hover { background: var(--bg); }
+.cat-toggle-left  { display: flex; align-items: center; gap: 9px; }
+.cat-toggle-right { display: flex; align-items: center; gap: 10px; }
+.cat-icon  { font-size: 1rem; }
+.cat-name  { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .55px; color: var(--text); }
+.cat-summary-text { font-size: .7rem; color: var(--text-3); margin-top: 2px; }
+.cat-status-dots  { display: flex; gap: 3px; align-items: center; }
+.csd { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.csd-green  { background: var(--green); }
+.csd-yellow { background: var(--yellow); }
+.csd-red    { background: var(--red); }
+.cat-chevron { font-size: .65rem; color: var(--text-3); transition: transform .2s; line-height: 1; }
+.cat-chevron.open { transform: rotate(180deg); }
+
+.results-list { border-top: 1px solid var(--border); display: none; }
+.results-list.open { display: block; }
 
 .result-item {
   display: flex; align-items: flex-start; gap: 11px;
@@ -405,6 +439,7 @@ input[type=file] { display: none; }
       <p id="resultsSubtitle">Your latest confirmed lab values.</p>
     </div>
     <div id="resultsAddedTags" class="added-labs"></div>
+    <div id="resultsInsight"></div>
     <div id="resultsContainer"></div>
   </div>
 
@@ -808,7 +843,75 @@ function updateResultsTags() {
 
 function shortName(n) { return n.replace(/\.[^.]+$/, '').replace(/_/g, ' ').slice(0, 24); }
 
+function genCatSummary(items) {
+  const counts = { green: 0, yellow: 0, red: 0 };
+  items.forEach(r => counts[tierColor(r.tier)]++);
+  const parts = [];
+  if (counts.green)  parts.push(counts.green + ' Normal');
+  if (counts.yellow) parts.push(counts.yellow + ' Borderline');
+  if (counts.red)    parts.push(counts.red + ' High');
+  return parts.join(' · ');
+}
+
+function toggleCat(id) {
+  const list    = document.getElementById(id);
+  const chevron = list.previousElementSibling.querySelector('.cat-chevron');
+  const opening = !list.classList.contains('open');
+  list.classList.toggle('open', opening);
+  chevron.classList.toggle('open', opening);
+}
+
+function renderInsight() {
+  const multiFile = confirmedSets.length > 1;
+  const active    = RESULTS_DATA.filter(r => !isExpired(r));
+  const flagged   = active.filter(r => tierColor(r.tier) !== 'green');
+
+  const metabolic = active.filter(r =>
+    ['LDL','HbA1c','Glucose','Triglycerides','hsCRP'].includes(r.name) && tierColor(r.tier) !== 'green'
+  );
+
+  let title, body, chips;
+
+  if (metabolic.length >= 3) {
+    title = 'Metabolic risk pattern detected';
+    body  = multiFile
+      ? `Across your ${confirmedSets.length} lab reports, LDL, blood sugar, and inflammation markers are trending upward together — a pattern associated with early metabolic syndrome. Consider discussing dietary and lifestyle changes with your doctor.`
+      : 'Your LDL, blood sugar, and inflammation markers are above optimal range — a cluster associated with metabolic risk. Dietary and lifestyle changes may help.';
+    chips = [
+      { label: '↑ LDL trending up',     cls: 'chip-red'    },
+      { label: '↑ HbA1c 5.2 → 5.8%',   cls: 'chip-yellow' },
+      { label: '↑ hsCRP 3× elevated',   cls: 'chip-red'    },
+      { label: '↑ Triglycerides rising', cls: 'chip-yellow' },
+    ];
+  } else if (flagged.length > 0) {
+    title = `${flagged.length} value${flagged.length > 1 ? 's' : ''} need attention`;
+    body  = `${flagged.map(r => r.name).join(', ')} ${flagged.length > 1 ? 'are' : 'is'} outside the optimal range. Worth reviewing with your doctor.`;
+    chips = flagged.slice(0, 3).map(r => ({
+      label: `${r.name}: ${r.tier}`,
+      cls:   tierColor(r.tier) === 'red' ? 'chip-red' : 'chip-yellow',
+    }));
+  } else {
+    title = 'All values within range';
+    body  = 'Your lab results look healthy across the board. Keep up the great work!';
+    chips = [{ label: '✓ All markers normal', cls: 'chip-green' }];
+  }
+
+  const dateRange = confirmedSets.map(s => s.date).filter(Boolean).join(' – ');
+  document.getElementById('resultsInsight').innerHTML = `
+    <div class="insight-card">
+      <div class="insight-hd">
+        <span class="insight-label">🔍 Lab Insight</span>
+        ${dateRange ? `<span class="insight-date">${esc(dateRange)}</span>` : ''}
+      </div>
+      <div class="insight-title">${esc(title)}</div>
+      <div class="insight-body">${esc(body)}</div>
+      <div class="insight-chips">${chips.map(c => `<span class="insight-chip ${c.cls}">${esc(c.label)}</span>`).join('')}</div>
+    </div>`;
+}
+
 function renderResults() {
+  renderInsight();
+
   const container = document.getElementById('resultsContainer');
   const groups = {};
   RESULTS_DATA.forEach(r => {
@@ -816,14 +919,29 @@ function renderResults() {
     groups[r.category].push(r);
   });
 
+  let catIdx = 0;
   let html = '';
   for (const [cat, items] of Object.entries(groups)) {
+    const catId  = 'cat-list-' + (catIdx++);
+    const dots   = items.map(r => `<span class="csd csd-${tierColor(r.tier)}"></span>`).join('');
+    const summary = genCatSummary(items);
+    const hasFlagged = items.some(r => tierColor(r.tier) !== 'green');
+
     html += `<div class="results-cat">
-      <div class="results-cat-hd">
-        <span class="cat-icon">${items[0].icon}</span>
-        <span class="cat-name">${esc(cat)}</span>
+      <div class="cat-toggle" onclick="toggleCat('${catId}')">
+        <div class="cat-toggle-left">
+          <span class="cat-icon">${items[0].icon}</span>
+          <div>
+            <div class="cat-name">${esc(cat)}</div>
+            <div class="cat-summary-text">${esc(summary)}</div>
+          </div>
+        </div>
+        <div class="cat-toggle-right">
+          <div class="cat-status-dots">${dots}</div>
+          <span class="cat-chevron${hasFlagged ? ' open' : ''}">▾</span>
+        </div>
       </div>
-      <div class="results-list">`;
+      <div class="results-list${hasFlagged ? ' open' : ''}" id="${catId}">`;
 
     items.forEach(r => {
       const color   = tierColor(r.tier);
