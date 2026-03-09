@@ -178,18 +178,22 @@ input[type=file] { display: none; }
 .val-date-input:focus { outline: none; border-color: var(--blue); }
 .hint-text { font-size: .76rem; color: var(--text-3); margin-top: 10px; text-align: center; }
 
-/* ── Decision ── */
-.dec-file { display: flex; align-items: center; gap: 12px; padding: 14px 16px; }
-.dec-file + .dec-file { border-top: 1px solid var(--border); }
-.dec-file-icon {
-  width: 36px; height: 36px; border-radius: 9px;
-  background: var(--green-light); display: flex; align-items: center;
-  justify-content: center; font-size: 1rem; flex-shrink: 0;
+/* ── Confirmed files list (upload screen) ── */
+.confirmed-lbl {
+  font-size: .72rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .45px; color: var(--text-2); margin: 20px 0 8px;
 }
-.dec-file-info { flex: 1; min-width: 0; }
-.dec-file-name { font-size: .88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.dec-file-meta { font-size: .75rem; color: var(--text-2); margin-top: 2px; }
-.dec-check { font-size: .95rem; color: var(--green); flex-shrink: 0; }
+.conf-file { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
+.conf-file + .conf-file { border-top: 1px solid var(--border); }
+.conf-file-icon {
+  width: 34px; height: 34px; border-radius: 9px;
+  background: var(--green-light); display: flex; align-items: center;
+  justify-content: center; font-size: .9rem; flex-shrink: 0;
+}
+.conf-file-info { flex: 1; min-width: 0; }
+.conf-file-name { font-size: .86rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.conf-file-meta { font-size: .73rem; color: var(--text-2); margin-top: 2px; }
+.conf-file-check { color: var(--green); font-size: .88rem; font-weight: 700; flex-shrink: 0; }
 
 /* ── Table ── */
 .val-table { width: 100%; border-collapse: collapse; font-size: .86rem; }
@@ -381,6 +385,11 @@ input[type=file] { display: none; }
       </div>
       <button class="sel-file-remove" id="removeFileBtn" title="Remove">✕</button>
     </div>
+
+    <div id="uploadConfirmedSection" style="display:none">
+      <p class="confirmed-lbl">Added labs</p>
+      <div class="card" id="uploadConfirmedList"></div>
+    </div>
   </div>
 
   <!-- ── Screen 2: Processing (shared for extract + analyze phases) ── -->
@@ -423,15 +432,6 @@ input[type=file] { display: none; }
     <p class="hint-text">Something wrong? Tap a cell to correct it.</p>
   </div>
 
-  <!-- ── Screen 3b: Decision ── -->
-  <div id="s-decision" class="screen">
-    <div class="sec-title">
-      <h2>Ready to Analyze</h2>
-      <p id="decisionSub">Generate your results or add another lab document.</p>
-    </div>
-    <div class="card" id="decisionFilesList"></div>
-  </div>
-
   <!-- ── Screen 4: Results ── -->
   <div id="s-results" class="screen">
     <div class="sec-title">
@@ -447,16 +447,12 @@ input[type=file] { display: none; }
 
 <!-- Fixed bottom bars -->
 <div class="bottom-bar" id="bar-upload">
-  <button class="btn btn-primary" id="analyzeBtn" disabled>Analyze Lab</button>
+  <button class="btn btn-secondary" id="generateResultsBtn" style="display:none">Generate Results</button>
+  <button class="btn btn-primary"   id="analyzeBtn" disabled>Analyze Lab</button>
 </div>
 
 <div class="bottom-bar" id="bar-validation" style="display:none">
   <button class="btn btn-primary" id="confirmBtn">Confirm Values</button>
-</div>
-
-<div class="bottom-bar" id="bar-decision" style="display:none">
-  <button class="btn btn-secondary" id="addAnotherFromDecisionBtn">+ Add Another File</button>
-  <button class="btn btn-primary" id="generateResultsBtn">Generate Results</button>
 </div>
 
 <div class="bottom-bar" id="bar-results" style="display:none">
@@ -515,15 +511,14 @@ function esc(s) { const d = document.createElement('div'); d.textContent = Strin
 
 // ─────────────── Screen switching ───────────────
 function showScreen(name) {
-  ['s-upload','s-processing','s-validation','s-decision','s-results'].forEach(id =>
+  ['s-upload','s-processing','s-validation','s-results'].forEach(id =>
     document.getElementById(id).classList.remove('active'));
-  ['bar-upload','bar-validation','bar-decision','bar-results'].forEach(id =>
+  ['bar-upload','bar-validation','bar-results'].forEach(id =>
     document.getElementById(id).style.display = 'none');
 
   document.getElementById('s-' + name).classList.add('active');
   if (name === 'upload')     document.getElementById('bar-upload').style.display = '';
   if (name === 'validation') document.getElementById('bar-validation').style.display = '';
-  if (name === 'decision')   document.getElementById('bar-decision').style.display = '';
   if (name === 'results')    document.getElementById('bar-results').style.display = '';
   window.scrollTo(0, 0);
 }
@@ -616,14 +611,14 @@ function pickFile(f) {
   document.getElementById('selFileSize').textContent = fmtSize(f.size);
   selFile.style.display  = '';
   dropzone.style.display = 'none';
-  analyzeBtn.disabled    = false;
+  updateUploadBar();
 }
 
 document.getElementById('removeFileBtn').addEventListener('click', () => {
   currentFile = null;
   selFile.style.display  = 'none';
   dropzone.style.display = '';
-  analyzeBtn.disabled    = true;
+  updateUploadBar();
 });
 
 analyzeBtn.addEventListener('click', () => startProcessing('extract'));
@@ -704,50 +699,56 @@ function collectAndSave() {
   });
 }
 
+function renderUploadConfirmed() {
+  const section = document.getElementById('uploadConfirmedSection');
+  const list    = document.getElementById('uploadConfirmedList');
+  if (confirmedSets.length === 0) { section.style.display = 'none'; return; }
+  section.style.display = '';
+  list.innerHTML = confirmedSets.map(s => `
+    <div class="conf-file">
+      <div class="conf-file-icon">📎</div>
+      <div class="conf-file-info">
+        <div class="conf-file-name">${esc(s.fileName)}</div>
+        <div class="conf-file-meta">${s.rows.length} value${s.rows.length !== 1 ? 's' : ''} · ${s.date || 'no date'}</div>
+      </div>
+      <div class="conf-file-check">✓</div>
+    </div>`).join('');
+}
+
+function updateUploadBar() {
+  document.getElementById('generateResultsBtn').style.display = confirmedSets.length > 0 ? '' : 'none';
+  analyzeBtn.disabled = !currentFile;
+}
+
 function goToUploadForAnother() {
   currentFile = null;
   selFile.style.display  = 'none';
   dropzone.style.display = '';
-  analyzeBtn.disabled    = true;
-  document.getElementById('uploadTitle').textContent = 'Add Another Lab';
-  document.getElementById('uploadSub').textContent   = 'Add another document to include more values in your results.';
+  document.getElementById('uploadTitle').textContent = confirmedSets.length > 0 ? 'Add Another Lab' : 'Upload Lab Results';
+  document.getElementById('uploadSub').textContent   = confirmedSets.length > 0
+    ? 'Add another document to include more values in your results.'
+    : 'Drop or browse a lab document — PDF, JPG, or PNG.';
+  renderUploadConfirmed();
+  updateUploadBar();
   showScreen('upload');
 }
 
-function renderDecision() {
-  const n = confirmedSets.length;
-  document.getElementById('decisionSub').textContent =
-    n === 1 ? '1 file confirmed. Generate your results or add another lab document.'
-            : `${n} files confirmed. Generate your results or add another lab document.`;
-  document.getElementById('decisionFilesList').innerHTML = confirmedSets.map(s => `
-    <div class="dec-file">
-      <div class="dec-file-icon">📎</div>
-      <div class="dec-file-info">
-        <div class="dec-file-name">${esc(s.fileName)}</div>
-        <div class="dec-file-meta">${s.rows.length} value${s.rows.length !== 1 ? 's' : ''} · ${s.date || 'no date'}</div>
-      </div>
-      <div class="dec-check">✓</div>
-    </div>
-  `).join('');
-}
-
-// Confirm → decision screen
+// Confirm → back to upload with file added to list
 document.getElementById('confirmBtn').addEventListener('click', () => {
   collectAndSave();
-  renderDecision();
-  showScreen('decision');
+  goToUploadForAnother();
 });
 
-// Decision: add another file
-document.getElementById('addAnotherFromDecisionBtn').addEventListener('click', goToUploadForAnother);
-
-// Decision: generate results
+// Generate results (from upload bar)
 document.getElementById('generateResultsBtn').addEventListener('click', () => {
   startProcessing('analyze');
 });
 
 // ─────────────── Add another lab (from results) ───────────────
-document.getElementById('addAnotherBtn').addEventListener('click', goToUploadForAnother);
+document.getElementById('addAnotherBtn').addEventListener('click', () => {
+  confirmedSets = [];
+  goToUploadForAnother();
+});
 
 // ─────────────── Results screen ───────────────
 const TODAY = new Date('2026-03-08');
