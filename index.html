@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lab Analysis</title>
+<style>
+:root {
+  --blue:        #3B82F6;
+  --blue-dark:   #2563EB;
+  --blue-light:  #EFF6FF;
+  --green:       #22C55E;
+  --green-light: #F0FDF4;
+  --yellow:      #EAB308;
+  --yellow-light:#FEFCE8;
+  --red:         #EF4444;
+  --red-light:   #FEF2F2;
+  --orange:      #F97316;
+  --bg:          #F1F5F9;
+  --surface:     #FFFFFF;
+  --border:      #E2E8F0;
+  --text:        #1E293B;
+  --text-2:      #64748B;
+  --text-3:      #94A3B8;
+  --shadow:      0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+  --r:           12px;
+  --r-sm:        8px;
+  --r-lg:        16px;
+  --r-pill:      999px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-text-size-adjust: 100%;
+  line-height: 1.5;
+}
+
+/* ── Header ── */
+.app-header {
+  background: rgba(255,255,255,.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 20;
+}
+.header-inner {
+  max-width: 600px; margin: 0 auto; height: 54px;
+  display: flex; align-items: center;
+  padding: 0 16px;
+}
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: .9rem; }
+.brand-icon {
+  width: 30px; height: 30px; background: var(--blue); color: #fff;
+  border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: .9rem;
+}
+
+/* ── Page ── */
+.page { max-width: 600px; margin: 0 auto; padding: 28px 16px 100px; }
+
+/* ── Screens ── */
+.screen { display: none; }
+.screen.active { display: block; animation: fadeUp .28s ease; }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Section title ── */
+.sec-title { margin-bottom: 20px; }
+.sec-title h2 { font-size: 1.2rem; font-weight: 700; margin-bottom: 3px; }
+.sec-title p  { font-size: .855rem; color: var(--text-2); }
+
+/* ── Cards ── */
+.card { background: var(--surface); border-radius: var(--r); border: 1px solid var(--border); box-shadow: var(--shadow); }
+
+/* ── Drop zone ── */
+.dropzone {
+  border: 2px dashed var(--border); border-radius: var(--r-lg);
+  padding: 44px 24px; text-align: center; cursor: pointer;
+  background: var(--surface); margin-bottom: 14px;
+  transition: border-color .2s, background .2s;
+}
+.dropzone:hover, .dropzone.over { border-color: var(--blue); background: var(--blue-light); }
+.dz-bull {
+  width: 54px; height: 54px; border-radius: 15px;
+  background: var(--blue-light); display: inline-flex;
+  align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 14px;
+}
+.dz-title { font-size: .95rem; font-weight: 600; margin-bottom: 4px; }
+.dz-sub   { font-size: .8rem; color: var(--text-2); }
+.dz-sub strong { color: var(--blue); }
+.dz-fmts  { font-size: .72rem; color: var(--text-3); margin-top: 10px; letter-spacing: .2px; }
+input[type=file] { display: none; }
+
+/* ── Selected file preview ── */
+.sel-file { display: flex; align-items: center; gap: 12px; padding: 14px 16px; margin-bottom: 14px; }
+.sel-file-icon {
+  width: 42px; height: 42px; border-radius: 11px;
+  background: var(--blue-light); display: flex; align-items: center;
+  justify-content: center; font-size: 1.1rem; flex-shrink: 0;
+}
+.sel-file-info { flex: 1; min-width: 0; }
+.sel-file-name { font-size: .9rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sel-file-size { font-size: .75rem; color: var(--text-2); margin-top: 2px; }
+.sel-file-remove {
+  width: 30px; height: 30px; border: none; background: none; border-radius: var(--r-sm);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--text-3); font-size: 1rem; flex-shrink: 0;
+  transition: background .15s, color .15s;
+}
+.sel-file-remove:hover { background: var(--red-light); color: var(--red); }
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 12px 22px; border: none; border-radius: var(--r-pill);
+  font-size: .88rem; font-weight: 600; cursor: pointer; font-family: inherit;
+  transition: background .18s, opacity .18s, transform .1s;
+  letter-spacing: .1px; white-space: nowrap;
+}
+.btn:active { transform: scale(.97); }
+.btn-primary   { background: var(--blue); color: #fff; }
+.btn-primary:hover { background: var(--blue-dark); }
+.btn-primary:disabled { opacity: .35; pointer-events: none; }
+.btn-secondary { background: var(--surface); color: var(--text); border: 1.5px solid var(--border); }
+.btn-secondary:hover { background: var(--bg); }
+
+/* ── Fixed bottom bar ── */
+.bottom-bar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: rgba(255,255,255,.95);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border);
+  padding: 12px 16px;
+  display: flex; gap: 10px; justify-content: center;
+  z-index: 20;
+}
+.bottom-bar .btn { flex: 1; max-width: 280px; }
+
+/* ── Processing ── */
+.proc-card { padding: 22px; }
+.proc-file { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.proc-file-icon {
+  width: 42px; height: 42px; border-radius: 11px;
+  background: var(--blue-light); display: flex; align-items: center;
+  justify-content: center; font-size: 1.1rem; flex-shrink: 0;
+}
+.proc-file-name { font-size: .88rem; font-weight: 600; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prog-track { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-bottom: 22px; }
+.prog-fill  { height: 100%; width: 0; background: linear-gradient(90deg, var(--blue), #60A5FA); border-radius: 3px; transition: width .25s ease; }
+.proc-steps { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+.proc-step  { display: flex; align-items: center; gap: 10px; font-size: .83rem; color: var(--text-3); transition: color .3s; }
+.proc-step.ps-active { color: var(--text-2); }
+.proc-step.ps-done   { color: var(--green); font-weight: 500; }
+.ps-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--border); flex-shrink: 0;
+  transition: background .3s;
+}
+.proc-step.ps-active .ps-dot { background: var(--blue); animation: pulse 1s ease-in-out infinite; }
+.proc-step.ps-done   .ps-dot { background: var(--green); animation: none; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+/* ── Validation ── */
+.val-meta { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+.val-meta-icon {
+  width: 36px; height: 36px; border-radius: 9px;
+  background: var(--blue-light); display: flex; align-items: center;
+  justify-content: center; font-size: 1rem; flex-shrink: 0;
+}
+.val-meta-name { font-size: .88rem; font-weight: 600; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.val-date-row { padding: 10px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; font-size: .8rem; color: var(--text-2); }
+.val-date-input { padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: .8rem; font-family: inherit; color: var(--text); background: var(--bg); }
+.val-date-input:focus { outline: none; border-color: var(--blue); }
+.hint-text { font-size: .76rem; color: var(--text-3); margin-top: 10px; text-align: center; }
+
+/* ── Decision ── */
+.dec-file { display: flex; align-items: center; gap: 12px; padding: 14px 16px; }
+.dec-file + .dec-file { border-top: 1px solid var(--border); }
+.dec-file-icon {
+  width: 36px; height: 36px; border-radius: 9px;
+  background: var(--green-light); display: flex; align-items: center;
+  justify-content: center; font-size: 1rem; flex-shrink: 0;
+}
+.dec-file-info { flex: 1; min-width: 0; }
+.dec-file-name { font-size: .88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dec-file-meta { font-size: .75rem; color: var(--text-2); margin-top: 2px; }
+.dec-check { font-size: .95rem; color: var(--green); flex-shrink: 0; }
+
+/* ── Table ── */
+.val-table { width: 100%; border-collapse: collapse; font-size: .86rem; }
+.val-table th {
+  text-align: left; padding: 8px 16px;
+  background: var(--bg); color: var(--text-3);
+  font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+  border-bottom: 1px solid var(--border);
+}
+.val-table td { padding: 10px 16px; border-bottom: 1px solid var(--border); }
+.val-table tr:last-child td { border-bottom: none; }
+.val-table td.editable { outline: none; cursor: text; border-radius: 4px; transition: background .15s; }
+.val-table td.editable:hover  { background: var(--bg); }
+.val-table td.editable:focus  { background: var(--blue-light); }
+.biomarker-select {
+  width: 100%; padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .84rem; font-family: inherit; color: var(--text); background: var(--surface); cursor: pointer;
+}
+.biomarker-select:focus { outline: none; border-color: var(--blue); }
+.row-del {
+  width: 28px; height: 28px; border: none; background: none; border-radius: 6px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: .95rem; cursor: pointer; color: var(--text-3); transition: background .15s, color .15s;
+}
+.row-del:hover { background: var(--red-light); color: var(--red); }
+.add-row-btn {
+  width: calc(100% - 32px); margin: 10px 16px 16px;
+  padding: 9px 0; background: none;
+  border: 1.5px dashed var(--border); border-radius: var(--r-sm);
+  color: var(--text-2); font-size: .8rem; cursor: pointer; font-family: inherit;
+  transition: border-color .2s, color .2s, background .2s;
+}
+.add-row-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+
+/* ── Results ── */
+.results-cat { margin-bottom: 22px; }
+.results-cat-hd {
+  display: flex; align-items: center; gap: 7px;
+  margin-bottom: 10px; padding: 0 2px;
+}
+.cat-icon { font-size: 1rem; }
+.cat-name { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .55px; color: var(--text-2); }
+
+.results-list { background: var(--surface); border-radius: var(--r); border: 1px solid var(--border); overflow: hidden; }
+
+.result-item {
+  display: flex; align-items: flex-start; gap: 11px;
+  padding: 13px 14px 13px 17px; border-bottom: 1px solid var(--border);
+  position: relative;
+}
+.result-item:last-child { border-bottom: none; }
+.result-accent {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 2px 0 0 2px;
+}
+.status-green  .result-accent { background: var(--green); }
+.status-yellow .result-accent { background: var(--yellow); }
+.status-red    .result-accent { background: var(--red); }
+.result-item.expired { opacity: .5; }
+
+.ri-icon { font-size: 1.05rem; flex-shrink: 0; width: 24px; text-align: center; padding-top: 3px; }
+.ri-body { flex: 1; min-width: 0; }
+.ri-top  { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.ri-name { font-size: .8rem; color: var(--text-2); }
+.ri-val-row { display: flex; align-items: baseline; gap: 4px; margin-top: 1px; }
+.ri-val  { font-size: 1.22rem; font-weight: 700; }
+.ri-unit { font-size: .72rem; color: var(--text-3); font-weight: 500; }
+.ri-arrow { font-size: .62rem; margin-left: 2px; }
+.arrow-up   { color: var(--red); }
+.arrow-down { color: var(--yellow); }
+.arrow-ok   { color: var(--green); }
+.ri-chart { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex-shrink: 0; }
+.chart-window { font-size: .58rem; color: var(--text-3); }
+.ri-footer { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.ri-msg     { font-size: .76rem; color: var(--text-3); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ri-date    { font-size: .68rem; color: var(--border); flex-shrink: 0; }
+.ri-expired { font-size: .76rem; color: var(--orange); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.tier-badge {
+  display: inline-flex; align-items: center; padding: 2px 8px;
+  border-radius: var(--r-pill); font-size: .67rem; font-weight: 700; flex-shrink: 0;
+}
+.tb-green  { background: var(--green-light);  color: #15803D; }
+.tb-yellow { background: var(--yellow-light); color: #854D0E; }
+.tb-red    { background: var(--red-light);    color: #B91C1C; }
+
+.info-btn {
+  background: none; border: none; cursor: pointer; font-size: .72rem;
+  color: var(--text-3); padding: 2px 4px; border-radius: 4px; line-height: 1; flex-shrink: 0;
+  transition: color .15s;
+}
+.info-btn:hover { color: var(--text-2); }
+.ri-desc {
+  display: none; font-size: .76rem; color: var(--text-2); line-height: 1.4;
+  margin: 6px 0 2px; padding: 8px 10px; background: var(--bg); border-radius: var(--r-sm);
+}
+.ri-desc.open { display: block; }
+
+/* ── Added-labs tags (results screen) ── */
+.added-labs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
+.added-tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px 4px 8px; border-radius: var(--r-pill);
+  background: var(--green-light); color: #16A34A;
+  font-size: .72rem; font-weight: 600;
+}
+.added-tag-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+/* ── Dot timeline ── */
+.dot-timeline { display: flex; align-items: center; gap: 3px; }
+.dot-group { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.dot-c { width: 9px; height: 9px; border-radius: 50%; }
+.dot-c.normal   { background: var(--green); }
+.dot-c.abnormal { background: var(--red); }
+.dot-lbl  { font-size: .5rem; color: var(--text-3); }
+.dot-line { width: 10px; height: 1.5px; background: var(--border); align-self: center; margin-bottom: 11px; }
+
+/* ── Mobile ── */
+@media (max-width: 480px) {
+  .page { padding: 20px 12px 100px; }
+  .val-table th, .val-table td { padding: 9px 12px; }
+  .ri-val { font-size: 1.1rem; }
+}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="header-inner">
+    <div class="brand"><div class="brand-icon">🧬</div> Lab Analysis</div>
+  </div>
+</header>
+
+<div class="page">
+
+  <!-- ── Screen 1: Upload ── -->
+  <div id="s-upload" class="screen active">
+    <div class="sec-title">
+      <h2 id="uploadTitle">Upload Lab Results</h2>
+      <p id="uploadSub">Drop or browse a lab document — PDF, JPG, or PNG.</p>
+    </div>
+
+    <div class="dropzone" id="dropzone">
+      <div class="dz-bull">📄</div>
+      <div class="dz-title">Drop your lab document here</div>
+      <div class="dz-sub">or <strong>click to browse files</strong></div>
+      <div class="dz-fmts">PDF · JPG · PNG</div>
+    </div>
+    <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png">
+
+    <div id="selFile" class="card sel-file" style="display:none">
+      <div class="sel-file-icon">📎</div>
+      <div class="sel-file-info">
+        <div class="sel-file-name" id="selFileName">—</div>
+        <div class="sel-file-size" id="selFileSize">—</div>
+      </div>
+      <button class="sel-file-remove" id="removeFileBtn" title="Remove">✕</button>
+    </div>
+  </div>
+
+  <!-- ── Screen 2: Processing (shared for extract + analyze phases) ── -->
+  <div id="s-processing" class="screen">
+    <div class="sec-title">
+      <h2 id="procTitle">—</h2>
+      <p  id="procSub">—</p>
+    </div>
+    <div class="card proc-card">
+      <div class="proc-file">
+        <div class="proc-file-icon" id="procIcon">📎</div>
+        <div class="proc-file-name" id="procFileName">—</div>
+      </div>
+      <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
+      <ul class="proc-steps" id="procSteps"></ul>
+    </div>
+  </div>
+
+  <!-- ── Screen 3: Validation ── -->
+  <div id="s-validation" class="screen">
+    <div class="sec-title">
+      <h2>Review Extracted Values</h2>
+      <p>Tap any value to edit. Add or remove rows as needed.</p>
+    </div>
+    <div class="card" id="valCard">
+      <div class="val-meta">
+        <div class="val-meta-icon">📎</div>
+        <div class="val-meta-name" id="valFileName">—</div>
+      </div>
+      <div class="val-date-row">
+        <span>Lab date:</span>
+        <input class="val-date-input" type="date" id="valDate">
+      </div>
+      <table class="val-table">
+        <thead><tr><th>Biomarker</th><th>Value</th><th>Unit</th><th></th></tr></thead>
+        <tbody id="valTbody"></tbody>
+      </table>
+      <button class="add-row-btn" id="addRowBtn">+ Add row</button>
+    </div>
+    <p class="hint-text">Something wrong? Tap a cell to correct it.</p>
+  </div>
+
+  <!-- ── Screen 3b: Decision ── -->
+  <div id="s-decision" class="screen">
+    <div class="sec-title">
+      <h2>Ready to Analyze</h2>
+      <p id="decisionSub">Generate your results or add another lab document.</p>
+    </div>
+    <div class="card" id="decisionFilesList"></div>
+  </div>
+
+  <!-- ── Screen 4: Results ── -->
+  <div id="s-results" class="screen">
+    <div class="sec-title">
+      <h2>Lab Results</h2>
+      <p id="resultsSubtitle">Your latest confirmed lab values.</p>
+    </div>
+    <div id="resultsAddedTags" class="added-labs"></div>
+    <div id="resultsContainer"></div>
+  </div>
+
+</div><!-- /page -->
+
+<!-- Fixed bottom bars -->
+<div class="bottom-bar" id="bar-upload">
+  <button class="btn btn-primary" id="analyzeBtn" disabled>Analyze Lab</button>
+</div>
+
+<div class="bottom-bar" id="bar-validation" style="display:none">
+  <button class="btn btn-primary" id="confirmBtn">Confirm Values</button>
+</div>
+
+<div class="bottom-bar" id="bar-decision" style="display:none">
+  <button class="btn btn-secondary" id="addAnotherFromDecisionBtn">+ Add Another File</button>
+  <button class="btn btn-primary" id="generateResultsBtn">Generate Results</button>
+</div>
+
+<div class="bottom-bar" id="bar-results" style="display:none">
+  <button class="btn btn-secondary" id="addAnotherBtn">+ Add Another Lab</button>
+</div>
+
+
+<script>
+// ─────────────── State ───────────────
+let currentFile   = null; // { name, size, mockKey }
+let confirmedSets = [];   // [{ fileName, date, rows }]
+
+// ─────────────── Mock data ───────────────
+const MOCK = {
+  blood_panel: {
+    date: '2025-11-14',
+    rows: [
+      { name: 'Hemoglobin',  value: '14.2', unit: 'g/dL' },
+      { name: 'WBC',         value: '11.8', unit: '10³/µL' },
+      { name: 'Platelets',   value: '245',  unit: '10³/µL' },
+      { name: 'Hematocrit',  value: '42.1', unit: '%' },
+      { name: 'RBC',         value: '4.9',  unit: '10⁶/µL' },
+    ],
+  },
+  metabolic_panel: {
+    date: '2025-12-03',
+    rows: [
+      { name: 'Glucose (Fasting)', value: '105', unit: 'mg/dL' },
+      { name: 'HbA1c',             value: '5.8', unit: '%' },
+      { name: 'Creatinine',        value: '0.9', unit: 'mg/dL' },
+      { name: 'BUN',               value: '14',  unit: 'mg/dL' },
+      { name: 'ALT',               value: '28',  unit: 'U/L' },
+      { name: 'AST',               value: '22',  unit: 'U/L' },
+    ],
+  },
+  lipid_panel: {
+    date: '2026-01-20',
+    rows: [
+      { name: 'Total Cholesterol', value: '218', unit: 'mg/dL' },
+      { name: 'LDL Cholesterol',   value: '142', unit: 'mg/dL' },
+      { name: 'HDL Cholesterol',   value: '52',  unit: 'mg/dL' },
+      { name: 'Triglycerides',     value: '160', unit: 'mg/dL' },
+    ],
+  },
+};
+const MOCK_KEYS = Object.keys(MOCK);
+let mockIdx = 0;
+
+// ─────────────── Helpers ───────────────
+function fmtSize(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+  return (b / 1048576).toFixed(1) + ' MB';
+}
+function esc(s) { const d = document.createElement('div'); d.textContent = String(s); return d.innerHTML; }
+
+// ─────────────── Screen switching ───────────────
+function showScreen(name) {
+  ['s-upload','s-processing','s-validation','s-decision','s-results'].forEach(id =>
+    document.getElementById(id).classList.remove('active'));
+  ['bar-upload','bar-validation','bar-decision','bar-results'].forEach(id =>
+    document.getElementById(id).style.display = 'none');
+
+  document.getElementById('s-' + name).classList.add('active');
+  if (name === 'upload')     document.getElementById('bar-upload').style.display = '';
+  if (name === 'validation') document.getElementById('bar-validation').style.display = '';
+  if (name === 'decision')   document.getElementById('bar-decision').style.display = '';
+  if (name === 'results')    document.getElementById('bar-results').style.display = '';
+  window.scrollTo(0, 0);
+}
+
+// ─────────────── Processing screen (reused for both phases) ───────────────
+const PHASES = {
+  extract: {
+    title:   'Analyzing Lab Document',
+    sub:     'Our AI is reading your document and extracting lab values.',
+    icon:    '📎',
+    steps:   ['Reading document structure', 'Locating lab value tables', 'Extracting biomarker values', 'Matching to biomarker catalog', 'Ready to review'],
+    durations: [350, 600, 500, 450, 300],
+    onDone:  () => { showScreen('validation'); renderValidation(); },
+  },
+  analyze: {
+    title:   'Analyzing Your Results',
+    sub:     'Generating personalized insights based on your confirmed values.',
+    icon:    '🔬',
+    steps:   ['Reviewing confirmed values', 'Matching against reference ranges', 'Detecting cross-marker patterns', 'Generating personalized insights', 'Done'],
+    durations: [300, 500, 600, 700, 250],
+    onDone:  () => { showScreen('results'); renderResults(); updateResultsTags(); },
+  },
+};
+
+function startProcessing(phase) {
+  const cfg = PHASES[phase];
+  document.getElementById('procTitle').textContent    = cfg.title;
+  document.getElementById('procSub').textContent      = cfg.sub;
+  document.getElementById('procIcon').textContent     = cfg.icon;
+  document.getElementById('procFileName').textContent =
+    phase === 'analyze'
+      ? (confirmedSets.length > 1 ? `${confirmedSets.length} lab documents` : confirmedSets[0]?.fileName ?? currentFile?.name)
+      : currentFile.name;
+
+  const fill  = document.getElementById('progFill');
+  const list  = document.getElementById('procSteps');
+  fill.style.transition = 'none';
+  fill.style.width = '0%';
+  // Force reflow so the transition reset takes effect before re-enabling
+  fill.offsetWidth;
+  fill.style.transition = 'width .25s ease';
+
+  list.innerHTML = cfg.steps.map((s, i) =>
+    `<li class="proc-step" data-i="${i}"><div class="ps-dot"></div>${esc(s)}</li>`
+  ).join('');
+
+  showScreen('processing');
+
+  function runStep(i) {
+    if (i >= cfg.steps.length) {
+      fill.style.width = '100%';
+      setTimeout(cfg.onDone, 380);
+      return;
+    }
+    const steps = list.querySelectorAll('.proc-step');
+    steps[i].classList.add('ps-active');
+    fill.style.width = Math.round(((i + 0.6) / cfg.steps.length) * 100) + '%';
+    setTimeout(() => {
+      steps[i].classList.remove('ps-active');
+      steps[i].classList.add('ps-done');
+      runStep(i + 1);
+    }, cfg.durations[i]);
+  }
+  runStep(0);
+}
+
+// ─────────────── Upload screen ───────────────
+const dropzone   = document.getElementById('dropzone');
+const fileInput  = document.getElementById('fileInput');
+const analyzeBtn = document.getElementById('analyzeBtn');
+const selFile    = document.getElementById('selFile');
+
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover',  e => { e.preventDefault(); dropzone.classList.add('over'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('over'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault(); dropzone.classList.remove('over');
+  if (e.dataTransfer.files[0]) pickFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', () => {
+  if (fileInput.files[0]) pickFile(fileInput.files[0]);
+  fileInput.value = '';
+});
+
+function pickFile(f) {
+  const key = MOCK_KEYS[mockIdx % MOCK_KEYS.length];
+  mockIdx++;
+  currentFile = { name: f.name, size: f.size, mockKey: key };
+  document.getElementById('selFileName').textContent = f.name;
+  document.getElementById('selFileSize').textContent = fmtSize(f.size);
+  selFile.style.display  = '';
+  dropzone.style.display = 'none';
+  analyzeBtn.disabled    = false;
+}
+
+document.getElementById('removeFileBtn').addEventListener('click', () => {
+  currentFile = null;
+  selFile.style.display  = 'none';
+  dropzone.style.display = '';
+  analyzeBtn.disabled    = true;
+});
+
+analyzeBtn.addEventListener('click', () => startProcessing('extract'));
+
+// ─────────────── Validation screen ───────────────
+function renderValidation() {
+  const mock = MOCK[currentFile.mockKey];
+  document.getElementById('valFileName').textContent = currentFile.name;
+  document.getElementById('valDate').value = mock.date;
+  document.getElementById('valTbody').innerHTML =
+    mock.rows.map(r => dataRowHTML(r.name, r.value, r.unit)).join('');
+}
+
+function dataRowHTML(name, value, unit) {
+  return `<tr>
+    <td>${esc(name)}</td>
+    <td contenteditable="true" class="editable">${esc(value)}</td>
+    <td>${esc(unit)}</td>
+    <td><button class="row-del" onclick="this.closest('tr').remove()">✕</button></td>
+  </tr>`;
+}
+
+// Biomarker dropdown for new rows
+const BIOMARKERS = [
+  { group:'CBC (Blood Count)', items:[{name:'Hematocrit',unit:'%'},{name:'Hemoglobin',unit:'g/dL'},{name:'Platelet count',unit:'uL'},{name:'RBC count',unit:'10⁶/µL'},{name:'WBC count',unit:'10³/µL'}]},
+  { group:'BMP (Basic Panel)', items:[{name:'Bicarb (CO2)',unit:'mEq/L'},{name:'Chloride',unit:'mEq/L'},{name:'Potassium',unit:'mEq/L'},{name:'Sodium',unit:'mEq/L'}]},
+  { group:'Kidney', items:[{name:'BUN',unit:'mg/dL'},{name:'Creatinine',unit:'mg/dL'},{name:'eGFR',unit:'mL/min'}]},
+  { group:'Liver (CMP)', items:[{name:'ALP',unit:'U/L'},{name:'ALT',unit:'U/L'},{name:'AST',unit:'U/L'},{name:'Albumin',unit:'g/dL'},{name:'Bilirubin',unit:'mg/dL'},{name:'GGT',unit:'U/L'}]},
+  { group:'Metabolic', items:[{name:'HbA1c',unit:'%'},{name:'Glucose',unit:'mg/dL'}]},
+  { group:'Lipid', items:[{name:'HDL',unit:'mg/dL'},{name:'LDL',unit:'mg/dL'},{name:'Total Cholesterol',unit:'mg/dL'},{name:'Triglycerides',unit:'mg/dL'},{name:'VLDL',unit:'mg/dL'}]},
+  { group:'Thyroid', items:[{name:'Free T3',unit:'pg/mL'},{name:'Free T4',unit:'ng/dL'},{name:'TSH',unit:'mU/L'}]},
+  { group:'Urinalysis', items:[{name:'Blood (urine)',unit:''},{name:'Glucose (urine)',unit:''},{name:'Ketones',unit:''},{name:'Protein (urine)',unit:''}]},
+  { group:'Sexual Health', items:[{name:'Hep B',unit:''},{name:'Hep C',unit:''},{name:'HIV',unit:''},{name:'Syphilis',unit:''}]},
+  { group:'Vitamins & Minerals', items:[{name:'Calcium',unit:'mg/dL'},{name:'Ferritin',unit:'ng/mL'},{name:'Iron',unit:'ug/dL'},{name:'Magnesium',unit:'mg/dL'},{name:'Vitamin B12',unit:'pg/mL'},{name:'Vitamin D',unit:'ng/mL'}]},
+  { group:'Inflammatory', items:[{name:'CRP',unit:'mg/dL'},{name:'Cortisol',unit:'ug/dL'},{name:'ESR',unit:'mm/hr'}]},
+  { group:'Hormone', items:[{name:'DHEA-S',unit:'ug/dL'},{name:'Estradiol',unit:'pg/mL'},{name:'FSH',unit:'U/L'},{name:'LH',unit:'U/L'},{name:'Testosterone',unit:'ng/dL'}]},
+  { group:'Blood (Coagulation)', items:[{name:'D-dimer',unit:'ug/mL'},{name:'Fibrinogen',unit:'mg/dL'},{name:'INR',unit:'Ratio'},{name:'PT',unit:'Seconds'},{name:'PTT',unit:'Seconds'}]},
+];
+const UNIT_MAP = {};
+BIOMARKERS.forEach(g => g.items.forEach(b => { UNIT_MAP[b.name] = b.unit; }));
+
+function newRowHTML() {
+  let opts = '<option value="" disabled selected>Select biomarker…</option>';
+  BIOMARKERS.forEach(g => {
+    opts += `<optgroup label="${esc(g.group)}">`;
+    g.items.forEach(b => { opts += `<option value="${esc(b.name)}">${esc(b.name)}</option>`; });
+    opts += '</optgroup>';
+  });
+  return `<tr>
+    <td><select class="biomarker-select" onchange="onBioSelect(this)">${opts}</select></td>
+    <td contenteditable="true" class="editable"></td>
+    <td class="unit-cell"></td>
+    <td><button class="row-del" onclick="this.closest('tr').remove()">✕</button></td>
+  </tr>`;
+}
+function onBioSelect(sel) {
+  sel.closest('tr').querySelector('.unit-cell').textContent = UNIT_MAP[sel.value] || '';
+}
+document.getElementById('addRowBtn').addEventListener('click', () => {
+  document.getElementById('valTbody').insertAdjacentHTML('beforeend', newRowHTML());
+});
+
+// ─────────────── Shared helpers ───────────────
+function collectAndSave() {
+  const rows = [];
+  document.querySelectorAll('#valTbody tr').forEach(tr => {
+    const cells = tr.querySelectorAll('td');
+    const nameEl = cells[0];
+    const name   = nameEl.querySelector('select') ? nameEl.querySelector('select').value : nameEl.textContent.trim();
+    const value  = cells[1].textContent.trim();
+    const unit   = cells[2].textContent.trim();
+    if (name && value) rows.push({ name, value, unit });
+  });
+  confirmedSets.push({
+    fileName: currentFile.name,
+    date:     document.getElementById('valDate').value,
+    rows,
+  });
+}
+
+function goToUploadForAnother() {
+  currentFile = null;
+  selFile.style.display  = 'none';
+  dropzone.style.display = '';
+  analyzeBtn.disabled    = true;
+  document.getElementById('uploadTitle').textContent = 'Add Another Lab';
+  document.getElementById('uploadSub').textContent   = 'Add another document to include more values in your results.';
+  showScreen('upload');
+}
+
+function renderDecision() {
+  const n = confirmedSets.length;
+  document.getElementById('decisionSub').textContent =
+    n === 1 ? '1 file confirmed. Generate your results or add another lab document.'
+            : `${n} files confirmed. Generate your results or add another lab document.`;
+  document.getElementById('decisionFilesList').innerHTML = confirmedSets.map(s => `
+    <div class="dec-file">
+      <div class="dec-file-icon">📎</div>
+      <div class="dec-file-info">
+        <div class="dec-file-name">${esc(s.fileName)}</div>
+        <div class="dec-file-meta">${s.rows.length} value${s.rows.length !== 1 ? 's' : ''} · ${s.date || 'no date'}</div>
+      </div>
+      <div class="dec-check">✓</div>
+    </div>
+  `).join('');
+}
+
+// Confirm → decision screen
+document.getElementById('confirmBtn').addEventListener('click', () => {
+  collectAndSave();
+  renderDecision();
+  showScreen('decision');
+});
+
+// Decision: add another file
+document.getElementById('addAnotherFromDecisionBtn').addEventListener('click', goToUploadForAnother);
+
+// Decision: generate results
+document.getElementById('generateResultsBtn').addEventListener('click', () => {
+  startProcessing('analyze');
+});
+
+// ─────────────── Add another lab (from results) ───────────────
+document.getElementById('addAnotherBtn').addEventListener('click', goToUploadForAnother);
+
+// ─────────────── Results screen ───────────────
+const TODAY = new Date('2026-03-08');
+function daysSince(d) { return Math.floor((TODAY - new Date(d)) / 86400000); }
+function formatAge(d) {
+  const days = daysSince(d);
+  if (days <= 0) return 'Today';
+  if (days < 30)  return days + 'd ago';
+  const mo = Math.round(days / 30);
+  if (mo < 12)    return mo + 'mo ago';
+  return Math.round(days / 365) + 'yr ago';
+}
+function isExpired(r) { return daysSince(r.labDate) > r.expiresAfterDays; }
+
+const RESULTS_DATA = [
+  { category:'CBC (Blood Count)', icon:'🩸', name:'Hemoglobin', desc:'The protein in red blood cells that carries oxygen throughout your body.', value:14.2, unit:'g/dL', tier:'Normal', message:'Good oxygen-carrying capacity.', trendType:'line', history:[13.8,14.0,13.5,14.2], labDate:'2026-01-20', expiresAfterDays:180 },
+  { category:'CBC (Blood Count)', icon:'🛡️', name:'WBC', desc:'White blood cells that fight infections and protect your immune system.', value:11800, unit:'/µL', tier:'High', message:'Elevated — could indicate infection or inflammation.', trendType:'line', history:[7200,8100,9500,11800], labDate:'2026-01-20', expiresAfterDays:180 },
+  { category:'CBC (Blood Count)', icon:'🩸', name:'Hematocrit', desc:'The percentage of your blood made up of red blood cells.', value:42.1, unit:'%', tier:'Normal', message:'Healthy level.', trendType:'line', history:[43.0,41.5,42.8,42.1], labDate:'2026-01-20', expiresAfterDays:180 },
+  { category:'Lipid', icon:'🔴', name:'Total Cholesterol', desc:'The total amount of cholesterol in your blood.', value:218, unit:'mg/dL', tier:'Borderline-high', message:'Borderline high — watch your diet.', trendType:'line', history:[195,205,210,218], labDate:'2026-01-20', expiresAfterDays:365 },
+  { category:'Lipid', icon:'🔴', name:'LDL', desc:'"Bad" cholesterol that can build up in your artery walls.', value:142, unit:'mg/dL', tier:'Borderline-high', message:'Borderline high — consider reducing saturated fats.', trendType:'line', history:[118,125,135,142], labDate:'2026-01-20', expiresAfterDays:365 },
+  { category:'Lipid', icon:'💛', name:'HDL', desc:'"Good" cholesterol that helps remove other forms of cholesterol.', value:52, unit:'mg/dL', tier:'Borderline', message:'Acceptable but could be higher — regular cardio helps.', trendType:'line', history:[48,50,49,52], labDate:'2026-01-20', expiresAfterDays:365 },
+  { category:'Lipid', icon:'🟡', name:'Triglycerides', desc:'A type of fat in your blood, used for energy between meals.', value:160, unit:'mg/dL', tier:'Borderline-high', message:'Slightly elevated — reduce sugar and refined carbs.', trendType:'line', history:[120,135,148,160], labDate:'2026-01-20', expiresAfterDays:365 },
+  { category:'Metabolic', icon:'🍬', name:'HbA1c', desc:'Your average blood sugar level over the past 2–3 months.', value:5.8, unit:'%', tier:'Prediabetes', message:'In the prediabetic range — lifestyle changes can help.', trendType:'line', history:[5.2,5.4,5.6,5.8], labDate:'2025-12-03', expiresAfterDays:180 },
+  { category:'Metabolic', icon:'🍬', name:'Glucose', desc:'The amount of sugar in your blood after fasting.', value:105, unit:'mg/dL', tier:'High', message:'Elevated fasting glucose — monitor your sugar intake.', trendType:'line', history:[88,92,98,105], labDate:'2025-12-03', expiresAfterDays:180 },
+  { category:'Kidney', icon:'🫘', name:'eGFR', desc:'Estimates how efficiently your kidneys filter waste from your blood.', value:95, unit:'mL/min', tier:'Normal', message:'Excellent kidney function.', trendType:'line', history:[98,96,94,95], labDate:'2025-12-03', expiresAfterDays:180 },
+  { category:'Thyroid', icon:'🦋', name:'TSH', desc:'A hormone that tells your thyroid how much hormone to produce.', value:2.1, unit:'mU/L', tier:'Normal', message:'Thyroid function is balanced.', trendType:'line', history:[2.5,2.3,2.2,2.1], labDate:'2026-01-20', expiresAfterDays:365 },
+  { category:'Vitamins & Minerals', icon:'☀️', name:'Vitamin D', desc:'The "sunshine vitamin" — essential for bone health and immunity.', value:22, unit:'ng/mL', tier:'Borderline', message:'Borderline — consider supplements or more sun.', trendType:'line', history:[18,20,19,22], labDate:'2025-06-10', expiresAfterDays:180 },
+  { category:'Vitamins & Minerals', icon:'⛏️', name:'Iron', desc:'A mineral your body needs to make hemoglobin and carry oxygen.', value:85, unit:'µg/dL', tier:'Normal', message:'Iron levels are healthy.', trendType:'line', history:[78,82,80,85], labDate:'2025-12-03', expiresAfterDays:180 },
+  { category:'Inflammatory', icon:'🔥', name:'hsCRP', desc:'A marker of inflammation in the body — elevated levels raise CVD risk.', value:1.2, unit:'mg/L', tier:'Elevated', message:'Elevated — discuss with your doctor.', trendType:'line', history:[0.4,0.6,0.9,1.2], labDate:'2025-11-14', expiresAfterDays:90 },
+  { category:'Sexual Health', icon:'🔬', name:'HIV', desc:'Screens for the human immunodeficiency virus.', value:'Negative', unit:'', tier:'Normal', message:'HIV test is negative.', trendType:'dots', history:[{date:'Jan 25',status:'normal'},{date:'Jul 25',status:'normal'},{date:'Jan 26',status:'normal'}], labDate:'2026-01-20', expiresAfterDays:365 },
+  { category:'Sexual Health', icon:'🔬', name:'Hep C', desc:'Screens for hepatitis C, which affects the liver.', value:'Negative', unit:'', tier:'Normal', message:'Hepatitis C test is negative.', trendType:'dots', history:[{date:'Jan 25',status:'normal'},{date:'Jan 26',status:'normal'}], labDate:'2026-01-20', expiresAfterDays:365 },
+  { category:'Urinalysis', icon:'🧪', name:'Protein (urine)', desc:'Checks for protein leaking into urine — can signal kidney problems.', value:'Negative', unit:'', tier:'Normal', message:'No protein detected — kidneys filtering well.', trendType:'dots', history:[{date:'Jun 25',status:'normal'},{date:'Dec 25',status:'normal'},{date:'Feb 26',status:'normal'}], labDate:'2026-02-10', expiresAfterDays:90 },
+  { category:'Urinalysis', icon:'🧪', name:'Ketones', desc:'Substances produced when your body burns fat for energy.', value:'Positive', unit:'', tier:'Abnormal', message:'Ketones present — could indicate fasting or low-carb diet.', trendType:'dots', history:[{date:'Jun 25',status:'normal'},{date:'Nov 25',status:'abnormal'}], labDate:'2025-11-14', expiresAfterDays:90 },
+  { category:'Blood (Coagulation)', icon:'🩹', name:'INR', desc:'A standardized measure of blood clotting time.', value:1.0, unit:'Ratio', tier:'Normal', message:'Clotting function looks good.', trendType:'line', history:[1.0,1.1,0.9,1.0], labDate:'2026-01-20', expiresAfterDays:180 },
+];
+
+let descCount = 0;
+function toggleDesc(id) { document.getElementById(id).classList.toggle('open'); }
+
+function tierColor(tier) {
+  const t = tier.toLowerCase();
+  if (['normal','optimal','healthy'].includes(t)) return 'green';
+  if (['low','borderline','near-optimal','near optimal','prediabetes','borderline-high','deficient'].includes(t)) return 'yellow';
+  return 'red';
+}
+function tierBadgeClass(tier) {
+  const c = tierColor(tier);
+  return c === 'green' ? 'tb-green' : c === 'yellow' ? 'tb-yellow' : 'tb-red';
+}
+function trendArrow(history) {
+  if (!history || history.length < 2 || typeof history[0] !== 'number') return '';
+  const prev = history[history.length - 2], curr = history[history.length - 1];
+  if (curr > prev) return '<span class="ri-arrow arrow-up">▲</span>';
+  if (curr < prev) return '<span class="ri-arrow arrow-down">▼</span>';
+  return '<span class="ri-arrow arrow-ok">—</span>';
+}
+function sparkline(data, color) {
+  if (!data || data.length < 2) return '';
+  const stroke = color === 'green' ? 'var(--green)' : color === 'yellow' ? 'var(--yellow)' : 'var(--red)';
+  const w = 72, h = 26, p = 4;
+  const mn = Math.min(...data), mx = Math.max(...data), rng = mx - mn || 1;
+  const pts = data.map((v, i) => {
+    const x = p + (i / (data.length - 1)) * (w - 2 * p);
+    const y = h - p - ((v - mn) / rng) * (h - 2 * p);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  const lx = w - p, lv = data[data.length - 1];
+  const ly = (h - p - ((lv - mn) / rng) * (h - 2 * p)).toFixed(1);
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" fill="none">
+    <polyline points="${pts}" stroke="${stroke}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/>
+    <circle cx="${lx}" cy="${ly}" r="2.5" fill="${stroke}"/>
+  </svg>`;
+}
+function dotTimeline(history) {
+  let h = '<div class="dot-timeline">';
+  history.forEach((d, i) => {
+    if (i > 0) h += '<div class="dot-line"></div>';
+    h += `<div class="dot-group"><div class="dot-c ${d.status}"></div><div class="dot-lbl">${esc(d.date)}</div></div>`;
+  });
+  return h + '</div>';
+}
+
+function updateResultsTags() {
+  const tagsEl = document.getElementById('resultsAddedTags');
+  tagsEl.innerHTML = confirmedSets.map(s =>
+    `<span class="added-tag"><span class="added-tag-dot"></span>${esc(shortName(s.fileName))}</span>`
+  ).join('');
+  const total = confirmedSets.reduce((n, s) => n + s.rows.length, 0);
+  document.getElementById('resultsSubtitle').textContent =
+    confirmedSets.length + ' lab report' + (confirmedSets.length > 1 ? 's' : '') +
+    ' · ' + total + ' markers';
+}
+
+function shortName(n) { return n.replace(/\.[^.]+$/, '').replace(/_/g, ' ').slice(0, 24); }
+
+function renderResults() {
+  const container = document.getElementById('resultsContainer');
+  const groups = {};
+  RESULTS_DATA.forEach(r => {
+    if (!groups[r.category]) groups[r.category] = [];
+    groups[r.category].push(r);
+  });
+
+  let html = '';
+  for (const [cat, items] of Object.entries(groups)) {
+    html += `<div class="results-cat">
+      <div class="results-cat-hd">
+        <span class="cat-icon">${items[0].icon}</span>
+        <span class="cat-name">${esc(cat)}</span>
+      </div>
+      <div class="results-list">`;
+
+    items.forEach(r => {
+      const color   = tierColor(r.tier);
+      const expired = isExpired(r);
+      const descId  = 'desc-' + (++descCount);
+      const isLine  = r.trendType === 'line';
+      const dateStr = r.labDate ? formatAge(r.labDate) : '';
+
+      html += `<div class="result-item status-${color}${expired ? ' expired' : ''}">
+        <div class="result-accent"></div>
+        <div class="ri-icon">${r.icon}</div>
+        <div class="ri-body">
+          <div class="ri-top">
+            <div>
+              <div class="ri-name">${esc(r.name)}</div>
+              <div class="ri-val-row">
+                <span class="ri-val">${esc(String(r.value))}</span>
+                ${r.unit ? `<span class="ri-unit">${esc(r.unit)}</span>` : ''}
+                ${isLine ? trendArrow(r.history) : ''}
+              </div>
+            </div>
+            <div class="ri-chart">
+              ${isLine ? sparkline(r.history, color) : dotTimeline(r.history)}
+              <span class="chart-window">2 yr</span>
+            </div>
+          </div>
+          <div class="ri-footer">
+            ${expired
+              ? `<div class="ri-expired">Last tested ${dateStr} — consider retesting</div>`
+              : `<div class="ri-msg">${esc(r.message)}</div>`}
+            <span class="tier-badge ${tierBadgeClass(r.tier)}">${esc(r.tier)}</span>
+            <button class="info-btn" onclick="toggleDesc('${descId}')">ⓘ</button>
+          </div>
+          <div class="ri-desc" id="${descId}">${esc(r.desc)}</div>
+        </div>
+      </div>`;
+    });
+
+    html += '</div></div>';
+  }
+  container.innerHTML = html;
+}
+
+// ─────────────── Init ───────────────
+showScreen('upload');
+</script>
+</body>
+</html>
