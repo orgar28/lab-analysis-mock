@@ -78,23 +78,28 @@ body {
 /* ── Cards ── */
 .card { background: var(--surface); border-radius: var(--r); border: 1px solid var(--border); box-shadow: var(--shadow); }
 
-/* ── Drop zone ── */
-.dropzone {
+/* ── Upload actions ── */
+.upload-primary {
   border: 2px dashed var(--border); border-radius: var(--r-lg);
-  padding: 44px 24px; text-align: center; cursor: pointer;
-  background: var(--surface); margin-bottom: 14px;
-  transition: border-color .2s, background .2s;
+  padding: 36px 20px; text-align: center; cursor: pointer;
+  background: var(--surface); transition: border-color .2s, background .2s;
+  margin-bottom: 12px;
 }
-.dropzone:hover, .dropzone.over { border-color: var(--blue); background: var(--blue-light); }
-.dz-bull {
-  width: 54px; height: 54px; border-radius: 15px;
+.upload-primary:hover, .upload-primary.over { border-color: var(--blue); background: var(--blue-light); }
+.ut-icon {
+  width: 52px; height: 52px; border-radius: 14px;
   background: var(--blue-light); display: inline-flex;
-  align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 14px;
+  align-items: center; justify-content: center; font-size: 1.45rem; margin-bottom: 14px;
 }
-.dz-title { font-size: .95rem; font-weight: 600; margin-bottom: 4px; }
-.dz-sub   { font-size: .8rem; color: var(--text-2); }
-.dz-sub strong { color: var(--blue); }
-.dz-fmts  { font-size: .72rem; color: var(--text-3); margin-top: 10px; letter-spacing: .2px; }
+.ut-title { font-size: .95rem; font-weight: 600; margin-bottom: 5px; }
+.ut-sub   { font-size: .78rem; color: var(--text-2); line-height: 1.4; }
+.upload-secondary {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 10px; margin-bottom: 14px; cursor: pointer;
+  font-size: .82rem; color: var(--text-2); border-radius: var(--r-sm);
+  transition: color .15s, background .15s;
+}
+.upload-secondary:hover { color: var(--blue); background: var(--blue-light); }
 input[type=file] { display: none; }
 
 
@@ -352,13 +357,16 @@ input[type=file] { display: none; }
       <p id="uploadSub">Drop or browse a lab document — PDF, JPG, or PNG.</p>
     </div>
 
-    <div class="dropzone" id="dropzone">
-      <div class="dz-bull">📄</div>
-      <div class="dz-title">Drop your lab document here</div>
-      <div class="dz-sub">or <strong>click to browse files</strong></div>
-      <div class="dz-fmts">PDF · JPG · PNG</div>
+    <div class="upload-primary" id="dropzone">
+      <div class="ut-icon">📄</div>
+      <div class="ut-title">Upload a lab document</div>
+      <div class="ut-sub">Drag and drop or tap to browse · PDF, JPG, or PNG</div>
     </div>
-    <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png">
+    <div class="upload-secondary" id="cameraTile">
+      <span>📷</span> Take a photo instead
+    </div>
+    <input type="file" id="fileInput"   accept=".pdf,.jpg,.jpeg,.png">
+    <input type="file" id="cameraInput" accept="image/*" capture="environment">
 
     <div id="uploadConfirmedSection" style="display:none">
       <p class="confirmed-lbl">Added labs</p>
@@ -421,7 +429,7 @@ input[type=file] { display: none; }
 
 <!-- Fixed bottom bars -->
 <div class="bottom-bar" id="bar-upload" style="display:none">
-  <button class="btn btn-primary" id="generateResultsBtn">Generate Results</button>
+  <button class="btn btn-primary" id="generateResultsBtn">Analyze Results</button>
 </div>
 
 <div class="bottom-bar" id="bar-validation" style="display:none">
@@ -554,8 +562,10 @@ function startProcessing(phase) {
 }
 
 // ─────────────── Upload screen ───────────────
-const dropzone  = document.getElementById('dropzone');
-const fileInput = document.getElementById('fileInput');
+const dropzone   = document.getElementById('dropzone');
+const fileInput  = document.getElementById('fileInput');
+const cameraTile = document.getElementById('cameraTile');
+const cameraInput = document.getElementById('cameraInput');
 
 dropzone.addEventListener('click', () => fileInput.click());
 dropzone.addEventListener('dragover',  e => { e.preventDefault(); dropzone.classList.add('over'); });
@@ -567,6 +577,12 @@ dropzone.addEventListener('drop', e => {
 fileInput.addEventListener('change', () => {
   if (fileInput.files[0]) pickFile(fileInput.files[0]);
   fileInput.value = '';
+});
+
+cameraTile.addEventListener('click', () => cameraInput.click());
+cameraInput.addEventListener('change', () => {
+  if (cameraInput.files[0]) pickFile(cameraInput.files[0]);
+  cameraInput.value = '';
 });
 
 function pickFile(f) {
